@@ -3,7 +3,7 @@ PROJECT(ParticleFlowVisualization)
 
 # add libs you need
 SET(OpenCV_LIBS opencv_core opencv_imgproc opencv_highgui opencv_imgcodecs opencv_calib3d)
-SET(SRC main.cpp)
+SET(SRC main.cpp colors.h)
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${SRC} cli.h)
 
