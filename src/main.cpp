@@ -7,6 +7,24 @@
 
 #include "colors.h"
 
+class Timer {
+public:
+  Timer() : beg_(clock_::now()) {}
+  
+  void reset() { beg_ = clock_::now(); }
+  
+  double elapsed() const {
+    return std::chrono::duration_cast<second_>
+        (clock_::now() - beg_).count();
+  }
+
+private:
+  typedef std::chrono::high_resolution_clock clock_;
+  typedef std::chrono::duration<double, std::ratio<1> > second_;
+  std::chrono::time_point<clock_> beg_;
+};
+
+
 const int maxIterations = 1000;
 
 const int outputWidth = 1024;
@@ -22,7 +40,7 @@ const int numberOfPoints = 1000;
 const int pointRadius = 3;
 const int lineRadius = 1;
 
-const float deltaT = 0.1;
+const float deltaT = 1;
 
 std::array<cv::Point2f, numberOfPoints> points;
 std::array<std::array<cv::Point2f, numberOfPoints>, maxIterations> pointsHistory;
@@ -92,15 +110,13 @@ void curl(const cv::Mat2f &inMat, cv::Mat1f &outMat, cv::Mat3b &outMatRgb) {
         outMat.at<float>(row, col) = 0.f;
       }
     }
-    cv::Mat normalizedOutputMat = cv::Mat(outMat.rows, outMat.cols, CV_32FC1);
-    cv::normalize(outMat, normalizedOutputMat, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-    normalizedOutputMat.convertTo(normalizedOutputMat, CV_8UC1);
-    
-    
-    resize(normalizedOutputMat, normalizedOutputMat, cv::Size(), widthScale, heightScale, cv::INTER_LINEAR);
-    
-    applyColorMap(normalizedOutputMat, outMatRgb, cv::COLORMAP_COOL);
   }
+  
+  cv::Mat normalizedOutputMat = cv::Mat(outMat.rows, outMat.cols, CV_32FC1);
+  cv::normalize(outMat, normalizedOutputMat, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+  normalizedOutputMat.convertTo(normalizedOutputMat, CV_8UC1);
+  resize(normalizedOutputMat, normalizedOutputMat, cv::Size(), widthScale, heightScale, cv::INTER_LINEAR);
+  applyColorMap(normalizedOutputMat, outMatRgb, cv::COLORMAP_COOL);
 }
 
 void drawArrows(const cv::Mat &mat, cv::Mat &outputMat) {
@@ -118,7 +134,7 @@ void drawArrows(const cv::Mat &mat, cv::Mat &outputMat) {
       const cv::Point2f arrowStart = middle - vector;
       const cv::Point2f arrowEnd = middle + vector;
       
-      cv::arrowedLine(outputMat, arrowStart, arrowEnd, cv::Vec3b(126,191,255), 1, cv::LINE_AA, 0, 0.5);
+      cv::arrowedLine(outputMat, arrowStart, arrowEnd, cv::Vec3b(126,191,255), 1, cv::LINE_8, 0, 0.5);
     }
   }
 }
@@ -199,18 +215,25 @@ int main(int argc, const char **argv) {
   generateRandomPoints();
   
   for (iteration = 0; iteration < maxIterations; iteration++) {
-    oss.str("");
-    oss << "./data/flow_field/u" << std::setw(5) << std::setfill('0') << iteration << ".yml";
-    std::cout << oss.str() << std::endl;
+    {
+      Timer loadingTimer;
+      oss.str("");
+      oss << "./data/flow_field/u" << std::setw(5) << std::setfill('0') << iteration << ".yml";
+  
+      fs.open(oss.str(), cv::FileStorage::Mode::READ | cv::FileStorage::Mode::FORMAT_AUTO);
+      fs["flow"] >> flowMat;
+      fs.release();
+      std::cout << oss.str() << " loaded in " << loadingTimer.elapsed();
+    }
     
-    fs.open(oss.str(), cv::FileStorage::Mode::READ | cv::FileStorage::Mode::FORMAT_AUTO);
-    fs["flow"] >> flowMat;
-    fs.release();
-    
-    resize(flowMat, flowMat, cv::Size(), static_cast<float>(dataWidth) / static_cast<float>(flowMat.cols),
-           static_cast<float>(dataHeight) / static_cast<float>(flowMat.rows), cv::INTER_CUBIC);
-    
-    showFlowMat(flowMat, outputMat, outputMatRgb, outputMatRgbWithLines);
+    {
+      Timer drawTimer;
+      resize(flowMat, flowMat, cv::Size(), static_cast<float>(dataWidth) / static_cast<float>(flowMat.cols),
+             static_cast<float>(dataHeight) / static_cast<float>(flowMat.rows), cv::INTER_CUBIC);
+  
+      showFlowMat(flowMat, outputMat, outputMatRgb, outputMatRgbWithLines);
+      std::cout << ", rendered in " << drawTimer.elapsed() << std::endl;
+    }
     cv::waitKey(1);
   }
 }
