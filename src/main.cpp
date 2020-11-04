@@ -88,22 +88,24 @@ void curl(const cv::Mat2f &inMat, cv::Mat1f &outMat, cv::Mat3b &outMatRgb) {
     cv::normalize(outMat, normalizedOutputMat, 0, 255, cv::NORM_MINMAX, CV_8UC1);
     normalizedOutputMat.convertTo(normalizedOutputMat, CV_8UC1);
   
-    resize(normalizedOutputMat, normalizedOutputMat, cv::Size(), widthScale, heightScale, cv::INTER_CUBIC);
+    
+    resize(normalizedOutputMat, normalizedOutputMat, cv::Size(), widthScale, heightScale, cv::INTER_LINEAR);
 //    resize(outMat, outMat, cv::Size(), widthScale, heightScale, cv::INTER_CUBIC);
   
-    applyColorMap(normalizedOutputMat, outMatRgb, cv::COLORMAP_JET);
+    applyColorMap(normalizedOutputMat, outMatRgb, cv::COLORMAP_COOL);
   }
 }
 
 void drawArrows(const cv::Mat &mat, cv::Mat& outputMat){
   double min;
   double max;
+  float scaleOverride = 10.f;
   cv::minMaxLoc(mat, &min, &max);
   const float arrowsScale = std::max(std::abs(min), std::abs(max)) / std::min(heightScale, widthScale);
   
   for (int row = 0; row < mat.rows; row++) {
     for (int col = 0; col < mat.cols; col++) {
-      const cv::Point2f vector = mat.at<cv::Point2f>(row, col) * arrowsScale;
+      const cv::Point2f vector = mat.at<cv::Point2f>(row, col) * arrowsScale * scaleOverride;
 
       const cv::Point2f middle((col + 0.5f) * widthScale, (row + 0.5f) * heightScale);
       const cv::Point2f arrowStart = middle - vector;
@@ -122,7 +124,7 @@ void showFlowMat(const cv::Mat2f &mat/*, cv::Mat& outputMat*/) {
   
   for (int row = 0; row < mat.rows; row++) {
     for (int col = 0; col < mat.cols; col++) {
-      const cv::Vec2f loc_pix = mat.at<cv::Vec2f>(row, col);
+      const cv::Vec2f& loc_pix = mat.at<cv::Vec2f>(row, col);
       mat1.at<float>(row, col) = loc_pix[0];
       mat2.at<float>(row, col) = loc_pix[1];
       mat3.at<cv::Vec3f>(row, col) = {loc_pix[0], loc_pix[1]};
@@ -159,7 +161,7 @@ int main(int argc, const char **argv) {
     fs["flow"] >> flowMat;
     fs.release();
   
-    resize(flowMat, flowMat, cv::Size(), static_cast<float>(dataWidth)/flowMat.cols, static_cast<float>(dataHeight)/flowMat.rows, cv::INTER_CUBIC);
+    resize(flowMat, flowMat, cv::Size(), static_cast<float>(dataWidth)/static_cast<float>(flowMat.cols), static_cast<float>(dataHeight)/static_cast<float>(flowMat.rows), cv::INTER_CUBIC);
     showFlowMat(flowMat);
     cv::waitKey(20);
   }
