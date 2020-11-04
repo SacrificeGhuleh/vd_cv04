@@ -61,10 +61,6 @@ std::string type2str(int type) {
   return r;
 }
 
-template<typename T>
-T rescale(T val, T inMin, T inMax, T outMin, T outMax) {
-  return outMin + (val - inMin) * ((outMax - outMin) / (inMax - inMin));
-}
 
 template<typename T>
 cv::Point_<T> subpix(const cv::Mat_<cv::Vec<T, 2>> &mat, cv::Point_<T> point) {
@@ -122,7 +118,7 @@ void drawArrows(const cv::Mat &mat, cv::Mat &outputMat) {
       const cv::Point2f arrowStart = middle - vector;
       const cv::Point2f arrowEnd = middle + vector;
       
-      cv::arrowedLine(outputMat, arrowStart, arrowEnd, Color::Orange, 1, 8, 0, 0.3);
+      cv::arrowedLine(outputMat, arrowStart, arrowEnd, cv::Vec3b(126,191,255), 1, cv::LINE_AA, 0, 0.5);
     }
   }
 }
