@@ -102,7 +102,6 @@ void curl(const cv::Mat2f &inMat, cv::Mat1f &outMat, cv::Mat3b &outMatRgb) {
     
     
     resize(normalizedOutputMat, normalizedOutputMat, cv::Size(), widthScale, heightScale, cv::INTER_LINEAR);
-//    resize(outMat, outMat, cv::Size(), widthScale, heightScale, cv::INTER_CUBIC);
     
     applyColorMap(normalizedOutputMat, outMatRgb, cv::COLORMAP_COOL);
   }
@@ -156,37 +155,21 @@ void drawPointsHistory(cv::Mat3b &mat) {
   }
 }
 
-void showFlowMat(const cv::Mat2f &mat/*, cv::Mat& outputMat*/) {
-  std::cout << type2str(mat.type()) << std::endl;
-//  cv::Mat1f mat1 = cv::Mat1f::zeros(mat.rows, mat.cols);
-//  cv::Mat1f mat2 = cv::Mat1f::zeros(mat.rows, mat.cols);
-//  cv::Mat3f mat3 = cv::Mat3f::zeros(mat.rows, mat.cols);
-//
-//  for (int row = 0; row < mat.rows; row++) {
-//    for (int col = 0; col < mat.cols; col++) {
-//      const cv::Vec2f& loc_pix = mat.at<cv::Vec2f>(row, col);
-//      mat1.at<float>(row, col) = loc_pix[0];
-//      mat2.at<float>(row, col) = loc_pix[1];
-//      mat3.at<cv::Vec3f>(row, col) = {loc_pix[0], loc_pix[1]};
-//    }
-//  }
-//
-//  cv::imshow("FlowCh1", mat1);
-//  cv::imshow("FlowCh2", mat2);
-//  cv::imshow("FlowRGB", mat3);
+void showFlowMat(const cv::Mat2f &flowMat, cv::Mat1f &outputMat, cv::Mat3b &outputMatRgb, cv::Mat3b outputMatRgbWithLines) {
+//  std::cout << type2str(flowMat.type()) << std::endl;
   
-  cv::Mat1f outputMat = cv::Mat1f::zeros(mat.rows, mat.cols);
-  cv::Mat3b outputMatRgb = cv::Mat3b::zeros(mat.rows, mat.cols);
+  curl(flowMat, outputMat, outputMatRgb);
+  drawArrows(flowMat, outputMatRgb);
   
-  curl(mat, outputMat, outputMatRgb);
-  drawArrows(mat, outputMatRgb);
-  
-  movePoints(mat);
+  movePoints(flowMat);
   drawPoints(outputMatRgb);
-  drawPointsHistory(outputMatRgb);
+  
+  outputMatRgbWithLines = outputMatRgb.clone();
+  drawPointsHistory(outputMatRgbWithLines);
 
 //  cv::imshow("Output", outputMat);
   cv::imshow("OutputRGB", outputMatRgb);
+  cv::imshow("OutputRGBWithLines", outputMatRgbWithLines);
   
 }
 
@@ -211,7 +194,12 @@ void generateRandomPoints() {
 int main(int argc, const char **argv) {
   std::ostringstream oss;
   cv::FileStorage fs;
+  
   cv::Mat2f flowMat;
+  cv::Mat1f outputMat = cv::Mat1f::zeros(dataHeight, dataWidth);
+  cv::Mat3b outputMatRgb;
+  cv::Mat3b outputMatRgbWithLines;
+  
   generateRandomPoints();
   
   for (iteration = 0; iteration < maxIterations; iteration++) {
@@ -225,7 +213,8 @@ int main(int argc, const char **argv) {
     
     resize(flowMat, flowMat, cv::Size(), static_cast<float>(dataWidth) / static_cast<float>(flowMat.cols),
            static_cast<float>(dataHeight) / static_cast<float>(flowMat.rows), cv::INTER_CUBIC);
-    showFlowMat(flowMat);
+    
+    showFlowMat(flowMat, outputMat, outputMatRgb, outputMatRgbWithLines);
     cv::waitKey(1);
   }
 }
