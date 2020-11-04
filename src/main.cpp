@@ -72,7 +72,7 @@ cv::Point_<T> subpix(const cv::Mat_<cv::Vec<T, 2>> &mat, cv::Point_<T> point) {
 }
 
 template<typename T>
-cv::Point_<T> getRangeKutta(const cv::Mat2f &mat, const cv::Point_<T> &point) {
+cv::Point_<T> getRungeKutta(const cv::Mat2f &mat, const cv::Point_<T> &point) {
   cv::Point_<T> k1 = subpix(mat, point) * deltaT;
   cv::Point_<T> k2 = subpix(mat, point + k1 * 0.5f) * deltaT;
   cv::Point_<T> k3 = subpix(mat, point + k2 * 0.5f) * deltaT;
@@ -135,7 +135,7 @@ void drawPoints(cv::Mat3b &mat) {
 
 void movePoints(const cv::Mat2f &mat) {
   for (cv::Point2f &point: points) {
-    point = getRangeKutta(mat, point);
+    point = getRungeKutta(mat, point);
   }
 }
 
