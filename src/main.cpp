@@ -20,8 +20,9 @@ const float heightScale = static_cast<float>(outputHeight) / static_cast<float>(
 
 const int numberOfPoints = 1000;
 const int pointRadius = 3;
+const int lineRadius = 1;
 
-const float deltaT = 0.05;
+const float deltaT = 0.1;
 
 std::array<cv::Point2f, numberOfPoints> points;
 std::array<std::array<cv::Point2f, numberOfPoints>, maxIterations> pointsHistory;
@@ -132,9 +133,8 @@ void drawPoints(cv::Mat3b &mat) {
   for (const cv::Point2f &point: points) {
     const cv::Point2f interpolatedPoint(point.x * widthScale, point.y * heightScale);
     pointsHistory.at(iteration).at(idx) = interpolatedPoint;
-    cv::circle(mat, interpolatedPoint, pointRadius, colors[idx], cv::FILLED, cv::LINE_AA);
+    cv::circle(mat, interpolatedPoint, pointRadius, colors[idx % colorsSize], cv::FILLED, cv::LINE_AA);
     idx++;
-    idx %= colorsSize;
   }
 }
 
@@ -151,7 +151,7 @@ void drawPointsHistory(cv::Mat3b &mat) {
     for (int iter = 1; iter <= iteration; iter++) {
       const auto &p1 = pointsHistory.at(iter - 1).at(pointIdx);
       const auto &p2 = pointsHistory.at(iter).at(pointIdx);
-      cv::line(mat, p1, p2, color, 1, cv::LINE_AA);
+      cv::line(mat, p1, p2, color, lineRadius, cv::LINE_AA);
     }
   }
 }
