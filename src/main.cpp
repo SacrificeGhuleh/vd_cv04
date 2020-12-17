@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <filesystem>
 
 #include <opencv2/opencv.hpp>
 #include <random>
@@ -167,7 +168,7 @@ void drawPointsHistory(cv::Mat3b &mat) {
   }
 }
 
-void showFlowMat(const cv::Mat2f &flowMat, cv::Mat1f &outputMat, cv::Mat3b &outputMatRgb, cv::Mat3b outputMatRgbWithLines) {
+void showFlowMat(const cv::Mat2f &flowMat, cv::Mat1f &outputMat, cv::Mat3b &outputMatRgb, cv::Mat3b& outputMatRgbWithLines) {
 //  std::cout << type2str(flowMat.type()) << std::endl;
   
   curl(flowMat, outputMat, outputMatRgb);
@@ -199,7 +200,7 @@ void generateRandomPoints() {
   std::shuffle(allPoints.begin(), allPoints.end(), std::mt19937(std::random_device()()));
   
   for (int i = 0; i < numberOfPoints; i++) {
-    points.at(i) = allPoints.at(i);
+    points.at(i) = allPoints.at(i%allPoints.size());
   }
 }
 
@@ -212,6 +213,23 @@ int main(int argc, const char **argv) {
   cv::Mat3b outputMatRgb;
   cv::Mat3b outputMatRgbWithLines;
   
+  const std::filesystem::path outputPath = "out/out/";
+  const std::filesystem::path outputRgbPath = "out/rgb/";
+  const std::filesystem::path outputRgbLinesPath = "out/rgblines";
+  
+  if (!std::filesystem::is_directory(outputPath) || !std::filesystem::exists(outputPath)) {
+    std::filesystem::create_directories(outputPath);
+  }
+  
+  if (!std::filesystem::is_directory(outputRgbPath) || !std::filesystem::exists(outputRgbPath)) {
+    std::filesystem::create_directories(outputRgbPath);
+  }
+  
+  if (!std::filesystem::is_directory(outputRgbLinesPath) || !std::filesystem::exists(outputRgbLinesPath)) {
+    std::filesystem::create_directories(outputRgbLinesPath);
+  }
+  
+  
   generateRandomPoints();
   
   for (iteration = 0; iteration < maxIterations; iteration++) {
@@ -219,7 +237,10 @@ int main(int argc, const char **argv) {
       Timer loadingTimer;
       oss.str("");
       oss << "./data/flow_field/u" << std::setw(5) << std::setfill('0') << iteration << ".yml";
-  
+      if(!std::filesystem::exists(oss.str())){
+        throw std::runtime_error("File does not exist");
+      }
+      
       fs.open(oss.str(), cv::FileStorage::Mode::READ | cv::FileStorage::Mode::FORMAT_AUTO);
       fs["flow"] >> flowMat;
       fs.release();
@@ -233,6 +254,24 @@ int main(int argc, const char **argv) {
   
       showFlowMat(flowMat, outputMat, outputMatRgb, outputMatRgbWithLines);
       std::cout << ", rendered in " << drawTimer.elapsed() << std::endl;
+    }
+    
+    {
+      std::filesystem::path matOutputPath = outputPath;
+      std::filesystem::path matOutputRgbPath = outputRgbPath;
+      std::filesystem::path matOutputRgbLinesPath = outputRgbLinesPath;
+
+      std::ostringstream ossfname;
+      ossfname << std::setw(5) << std::setfill('0') << iteration << ".jpg";
+
+      matOutputPath.append(ossfname.str());
+      matOutputRgbPath.append(ossfname.str());
+      matOutputRgbLinesPath.append(ossfname.str());
+
+      cv::imwrite(matOutputPath.string(), outputMat);
+      cv::imwrite(matOutputRgbPath.string(), outputMatRgb);
+      cv::imwrite(matOutputRgbLinesPath.string(), outputMatRgbWithLines);
+      
     }
     cv::waitKey(1);
   }
